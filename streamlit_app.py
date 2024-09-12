@@ -21,23 +21,23 @@ class VideoTransformer(VideoTransformerBase):
 
         results = self.model(img_np)
         
+        # Create a draw object for the image
+        draw = ImageDraw.Draw(img)
+
         for r in results:
             boxes = r.boxes
             for box in boxes:
-                x1, y1, x2, y2 = box.xyxy[0]
-                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                x1, y1, x2, y2 = box.xyxy[0].int().tolist()
                 confidence = box.conf[0].item()
                 cls = int(box.cls[0].item())
 
-                img_np = self.draw_bounding_box(img_np, (x1, y1), (x2, y2), self.classNames[cls], confidence)
+                # Draw bounding box
+                draw.rectangle([x1, y1, x2, y2], outline="magenta", width=2)
+                label = f"{classNames[cls]} {confidence:.2f}"
+                draw.text((x1, y1), label, fill="magenta")
 
-        return img_np
-
-    def draw_bounding_box(self, img, start, end, label, confidence):
-        img_pil = Image.fromarray(img)
-        draw = ImageDraw.Draw(img_pil)
-        draw.rectangle([start, end], outline="magenta", width=2)
-        draw.text(start, f"{label} {confidence:.2f}", fill="magenta")
-        return np.array(img_pil)
+        # Convert the image back to a numpy array
+        return np.array(img)
 
 webrtc_streamer(key="object-detection", video_transformer_factory=VideoTransformer)
+
