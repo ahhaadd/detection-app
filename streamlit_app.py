@@ -8,18 +8,15 @@ from PIL import Image
 model = YOLO("best.pt")
 classNames = ["armchair", "cabinet"]
 
-st.title("Object Detection Demo")
+# Streamlit app
+st.title("Real-Time Object Detection")
 
-# Webcam input
-image = st.camera_input("Take a picture")
+# Placeholder for the video feed
+image_placeholder = st.empty()
 
-if image:
-    # Convert image to OpenCV format
-    image = np.array(Image.open(image))
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-    # Perform object detection
-    results = model(image)
+# Define a function to process the video stream
+def process_frame(frame):
+    results = model(frame)
     for r in results:
         boxes = r.boxes
         for box in boxes:
@@ -29,10 +26,28 @@ if image:
             cls = int(box.cls[0].item())
 
             # Draw bounding boxes and labels
-            cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 255), 2)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 255), 2)
             label = f"{classNames[cls]} {confidence:.2f}"
-            cv2.putText(image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
+            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
 
-    # Convert image back to PIL format and display
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    st.image(image, caption="Processed Image", use_column_width=True)
+    return frame
+
+# Capture video from webcam
+cap = cv2.VideoCapture(0)
+
+while True:
+    success, frame = cap.read()
+    if not success:
+        st.error("Failed to access webcam")
+        break
+
+    # Process frame
+    frame = process_frame(frame)
+
+    # Convert frame to RGB and display in Streamlit
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(frame_rgb)
+    image_placeholder.image(image, caption="Real-Time Object Detection", use_column_width=True)
+
+# Release the capture
+cap.release()
