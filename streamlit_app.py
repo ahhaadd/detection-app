@@ -42,4 +42,3 @@ webrtc_ctx = webrtc_streamer(
     video_processor_factory=VideoProcessor,
     video_frame_height=720
 )
-
