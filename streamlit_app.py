@@ -1,11 +1,11 @@
 import streamlit as st
 import cv2
 import numpy as np
-from ultralytics import YOLO
 from PIL import Image
+from ultralytics import YOLO
 
 # Load YOLO model
-model = YOLO("best.pt")
+model = YOLO("runs/detect/train28/weights/best.pt")
 classNames = ["armchair", "cabinet"]
 
 # Streamlit app
@@ -33,21 +33,24 @@ def process_frame(frame):
     return frame
 
 # Capture video from webcam
-cap = cv2.VideoCapture(0)
+def video_stream():
+    cap = cv2.VideoCapture(0)
+    while True:
+        success, frame = cap.read()
+        if not success:
+            st.error("Failed to access webcam")
+            break
 
-while True:
-    success, frame = cap.read()
-    if not success:
-        st.error("Failed to access webcam")
-        break
+        # Process frame
+        frame = process_frame(frame)
 
-    # Process frame
-    frame = process_frame(frame)
+        # Convert frame to RGB and display in Streamlit
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        image = Image.fromarray(frame_rgb)
+        image_placeholder.image(image, caption="Real-Time Object Detection", use_column_width=True)
 
-    # Convert frame to RGB and display in Streamlit
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    image = Image.fromarray(frame_rgb)
-    image_placeholder.image(image, caption="Real-Time Object Detection", use_column_width=True)
+    cap.release()
 
-# Release the capture
-cap.release()
+# Run video stream
+if st.button("Start Detection"):
+    video_stream()
