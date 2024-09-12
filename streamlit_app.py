@@ -11,8 +11,9 @@ classNames = ["armchair", "cabinet"]
 
 st.title("Real-Time Object Detection with YOLO")
 
-# Define a function to process video frames
+# Function to process and annotate video frames
 def process_frame(frame):
+    # Convert frame to OpenCV format
     image = np.array(Image.open(io.BytesIO(frame)))
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     
@@ -33,39 +34,36 @@ def process_frame(frame):
 
     return image
 
-# Function to display video
+# Function to display video stream
 def display_video():
     st.write("Webcam is streaming...")
-    webrtc_ctx = st.components.v1.html(
-        """
-        <html>
-        <body>
-        <video id="video" autoplay></video>
-        <script>
-        const video = document.getElementById('video');
-        navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
-            video.srcObject = stream;
-        });
-        </script>
-        </body>
-        </html>
-        """,
-        height=480
-    )
+    video_placeholder = st.empty()
     
-    return webrtc_ctx
+    # Open video capture
+    cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        st.error("Failed to access webcam.")
+        return
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            st.error("Failed to read frame from webcam.")
+            break
+
+        # Process frame
+        processed_frame = process_frame(frame)
+
+        # Convert the processed frame to PIL format and display it
+        processed_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+        video_placeholder.image(processed_frame, caption="Processed Frame", use_column_width=True)
+        
+        # Break the loop on user action
+        if st.button("Stop Streaming"):
+            break
+
+    cap.release()
 
 # Display video stream
-webrtc_ctx = display_video()
-
-# If the webcam stream is available
-if webrtc_ctx:
-    st.write("Webcam is active. Processing frames...")
-    while True:
-        frame = st.camera_input("Frame")
-        if frame:
-            frame = process_frame(frame)
-            # Convert the processed frame to PIL format and display it
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            st.image(frame, caption="Processed Frame", use_column_width=True)
-
+display_video()
