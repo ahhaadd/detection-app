@@ -5,7 +5,7 @@ from PIL import Image
 from ultralytics import YOLO
 
 # Load YOLO model
-model = YOLO("runs/detect/train28/weights/best.pt")
+model = YOLO("best.pt")
 classNames = ["armchair", "cabinet"]
 
 def process_frame(frame):
