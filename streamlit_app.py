@@ -1,56 +1,45 @@
 import streamlit as st
-import cv2
 import numpy as np
+import cv2
 from PIL import Image
+from streamlit_webrtc import VideoProcessorBase, webrtc_streamer
 from ultralytics import YOLO
 
 # Load YOLO model
 model = YOLO("best.pt")
 classNames = ["armchair", "cabinet"]
 
+# Define a video processor class for webrtc
+class VideoProcessor(VideoProcessorBase):
+    def __init__(self):
+        self.model = model
+        self.classNames = classNames
+
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        results = self.model(img)
+        for r in results:
+            boxes = r.boxes
+            for box in boxes:
+                x1, y1, x2, y2 = box.xyxy[0]
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                confidence = box.conf[0].item()
+                cls = int(box.cls[0].item())
+
+                # Draw bounding boxes and labels
+                cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 2)
+                label = f"{self.classNames[cls]} {confidence:.2f}"
+                cv2.putText(img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
+        
+        return frame.from_ndarray(img, format="bgr24")
+
 # Streamlit app
 st.title("Real-Time Object Detection")
 
-# Placeholder for the video feed
-image_placeholder = st.empty()
+# Create the WebRTC stream
+webrtc_ctx = webrtc_streamer(
+    key="object-detection",
+    video_processor_factory=VideoProcessor,
+    video_frame_height=720
+)
 
-# Define a function to process the video stream
-def process_frame(frame):
-    results = model(frame)
-    for r in results:
-        boxes = r.boxes
-        for box in boxes:
-            x1, y1, x2, y2 = box.xyxy[0]
-            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-            confidence = box.conf[0].item()
-            cls = int(box.cls[0].item())
-
-            # Draw bounding boxes and labels
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 255), 2)
-            label = f"{classNames[cls]} {confidence:.2f}"
-            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
-
-    return frame
-
-# Capture video from webcam
-def video_stream():
-    cap = cv2.VideoCapture(0)
-    while True:
-        success, frame = cap.read()
-        if not success:
-            st.error("Failed to access webcam")
-            break
-
-        # Process frame
-        frame = process_frame(frame)
-
-        # Convert frame to RGB and display in Streamlit
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image = Image.fromarray(frame_rgb)
-        image_placeholder.image(image, caption="Real-Time Object Detection", use_column_width=True)
-
-    cap.release()
-
-# Run video stream
-if st.button("Start Detection"):
-    video_stream()
