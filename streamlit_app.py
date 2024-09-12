@@ -9,7 +9,7 @@ from ultralytics import YOLO
 model = YOLO("best.pt")
 classNames = ["armchair", "cabinet"]
 
-# Define a video processor class for webrtc
+# Define a video processor class for WebRTC
 class VideoProcessor(VideoProcessorBase):
     def __init__(self):
         self.model = model
@@ -42,5 +42,10 @@ st.title("Real-Time Object Detection")
 webrtc_ctx = webrtc_streamer(
     key="object-detection",
     video_processor_factory=VideoProcessor,
-    video_frame_callback=None
+    media_stream_constraints={"video": True}
 )
+
+if webrtc_ctx.video_processor:
+    st.write("Webcam is streaming.")
+else:
+    st.write("Starting webcam...")
