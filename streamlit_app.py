@@ -6,7 +6,7 @@ from streamlit_webrtc import VideoProcessorBase, webrtc_streamer
 from ultralytics import YOLO
 
 # Load YOLO model
-model = YOLO("runs/detect/train28/weights/best.pt")
+model = YOLO("best.pt")
 classNames = ["armchair", "cabinet"]
 
 # Define a video processor class for webrtc
