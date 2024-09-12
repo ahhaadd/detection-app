@@ -40,4 +40,3 @@ class VideoTransformer(VideoTransformerBase):
         return np.array(img)
 
 webrtc_streamer(key="object-detection", video_transformer_factory=VideoTransformer)
-
