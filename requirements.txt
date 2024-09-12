@@ -4,3 +4,4 @@ ultralytics==8.0.88
 torch
 numpy==1.25.1
 Pillow==10.0.0
+opencv-python
