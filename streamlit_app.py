@@ -9,12 +9,15 @@ import io
 model = YOLO("best.pt")
 classNames = ["armchair", "cabinet"]
 
-st.title("Real-Time Object Detection with YOLO")
+st.title("Object Detection with YOLO")
 
-# Function to process and annotate video frames
-def process_frame(frame):
-    # Convert frame to OpenCV format
-    image = np.array(Image.open(io.BytesIO(frame)))
+# Upload an image
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+
+if uploaded_file:
+    # Convert uploaded image to OpenCV format
+    image = Image.open(uploaded_file)
+    image = np.array(image)
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     
     # Perform object detection
@@ -31,39 +34,9 @@ def process_frame(frame):
             cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 255), 2)
             label = f"{classNames[cls]} {confidence:.2f}"
             cv2.putText(image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
-
-    return image
-
-# Function to display video stream
-def display_video():
-    st.write("Webcam is streaming...")
-    video_placeholder = st.empty()
     
-    # Open video capture
-    cap = cv2.VideoCapture(0)
-
-    if not cap.isOpened():
-        st.error("Failed to access webcam.")
-        return
-    
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            st.error("Failed to read frame from webcam.")
-            break
-
-        # Process frame
-        processed_frame = process_frame(frame)
-
-        # Convert the processed frame to PIL format and display it
-        processed_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-        video_placeholder.image(processed_frame, caption="Processed Frame", use_column_width=True)
-        
-        # Break the loop on user action
-        if st.button("Stop Streaming"):
-            break
-
-    cap.release()
-
-# Display video stream
-display_video()
+    # Convert image back to PIL format and display
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    st.image(image, caption="Processed Image", use_column_width=True)
+else:
+    st.write("Please upload an image file.")
