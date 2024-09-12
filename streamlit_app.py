@@ -1,12 +1,12 @@
 import streamlit as st
-import numpy as np
 import cv2
+import numpy as np
 from PIL import Image
 from streamlit_webrtc import VideoProcessorBase, webrtc_streamer
 from ultralytics import YOLO
 
 # Load YOLO model
-model = YOLO("best.pt")
+model = YOLO("runs/detect/train28/weights/best.pt")
 classNames = ["armchair", "cabinet"]
 
 # Define a video processor class for webrtc
@@ -39,6 +39,5 @@ st.title("Real-Time Object Detection")
 # Create the WebRTC stream
 webrtc_ctx = webrtc_streamer(
     key="object-detection",
-    video_processor_factory=VideoProcessor,
-    video_frame_height=720
+    video_processor_factory=VideoProcessor
 )
