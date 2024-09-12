@@ -17,6 +17,8 @@ class VideoProcessor(VideoProcessorBase):
 
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
+
+        # Perform object detection
         results = self.model(img)
         for r in results:
             boxes = r.boxes
@@ -39,5 +41,6 @@ st.title("Real-Time Object Detection")
 # Create the WebRTC stream
 webrtc_ctx = webrtc_streamer(
     key="object-detection",
-    video_processor_factory=VideoProcessor
+    video_processor_factory=VideoProcessor,
+    video_frame_callback=None
 )
