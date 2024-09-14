@@ -34,14 +34,17 @@ def detect_objects(frame):
                 cv2.putText(frame, f"{classNames[cls]} {confidence:.2f}", org, font, fontScale, color, thickness)
     return frame
 
-# Capture video from webcam
-cap = cv2.VideoCapture(0)
-
 # Streamlit container for the video feed
 stframe = st.empty()
 
+# Capture video from webcam
+cap = cv2.VideoCapture(0)
+
+# Use a flag to control the stream
+stop_flag = st.checkbox('Stop Stream')
+
 # Run the video stream
-while True:
+while not stop_flag:
     success, frame = cap.read()
     if not success:
         st.error("Failed to capture image from webcam.")
@@ -56,9 +59,7 @@ while True:
     # Display the frame
     stframe.image(frame_rgb, channels='RGB', use_column_width=True)
 
-    # Break loop on stop button click
-    if st.button('Stop'):
-        break
+    # Update stop flag
+    stop_flag = st.checkbox('Stop Stream', value=stop_flag)
 
 cap.release()
-cv2.destroyAllWindows()
