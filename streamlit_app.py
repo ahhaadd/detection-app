@@ -12,7 +12,7 @@ classNames = ["armchair", "cabinet"]
 CONFIDENCE_THRESHOLD = 0.75
 
 # Streamlit interface
-st.title("Real-Time Object Detection with YOLO")
+st.title("Object Detection with YOLO")
 
 # Function to detect objects and return the processed frame
 def detect_objects(frame):
@@ -34,22 +34,23 @@ def detect_objects(frame):
                 cv2.putText(frame, f"{classNames[cls]} {confidence:.2f}", org, font, fontScale, color, thickness)
     return frame
 
-# Streamlit container for the video feed
-stframe = st.empty()
+# Upload image or video file
+uploaded_file = st.file_uploader("Choose an image or video file", type=["jpg", "jpeg", "png", "mp4"])
 
-# Capture video from webcam
-cap = cv2.VideoCapture(0)
-
-# Use a flag to control the stream
-stop_flag = st.checkbox('Stop Stream')
-
-# Run the video stream
-while not stop_flag:
-    success, frame = cap.read()
-    if not success:
-        st.error("Failed to capture image from webcam.")
-        break
-
+if uploaded_file is not None:
+    # Load the file into a numpy array
+    if uploaded_file.type.startswith('image'):
+        image = Image.open(uploaded_file)
+        frame = np.array(image)
+    elif uploaded_file.type.startswith('video'):
+        # For videos, read the first frame
+        cap = cv2.VideoCapture(uploaded_file.read())
+        ret, frame = cap.read()
+        cap.release()
+        if not ret:
+            st.error("Failed to read video.")
+            st.stop()
+    
     # Detect objects in the frame
     frame = detect_objects(frame)
 
@@ -57,9 +58,4 @@ while not stop_flag:
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
     # Display the frame
-    stframe.image(frame_rgb, channels='RGB', use_column_width=True)
-
-    # Update stop flag
-    stop_flag = st.checkbox('Stop Stream', value=stop_flag)
-
-cap.release()
+    st.image(frame_rgb, channels='RGB', use_column_width=True)
