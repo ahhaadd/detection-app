@@ -5,7 +5,7 @@ import numpy as np
 from ultralytics import YOLO
 
 # Load the YOLO model
-model = YOLO("runs/detect/train34/weights/best.pt")
+model = YOLO("best.pt")
 
 # Object classes
 classNames = ["armchair", "cabinet"]
