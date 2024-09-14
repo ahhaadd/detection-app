@@ -1,42 +1,64 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import cv2
+from PIL import Image
 import numpy as np
-from PIL import Image, ImageDraw
 from ultralytics import YOLO
 
-# Load YOLO model
-model = YOLO("best.pt")
-classNames = ["armchair", "cabinet"]
+# Load the YOLO model
+model = YOLO("runs/detect/train34/weights/best.pt")
 
+# Object classes
+classNames = ["armchair", "cabinet"]
+CONFIDENCE_THRESHOLD = 0.75
+
+# Streamlit interface
 st.title("Real-Time Object Detection with YOLO")
 
-class VideoTransformer(VideoTransformerBase):
-    def __init__(self):
-        self.model = model
-        self.classNames = classNames
-
-    def transform(self, frame):
-        img = Image.fromarray(frame.to_ndarray(format="bgr24"))
-        img_np = np.array(img)
-
-        results = self.model(img_np)
-        
-        # Create a draw object for the image
-        draw = ImageDraw.Draw(img)
-
-        for r in results:
-            boxes = r.boxes
-            for box in boxes:
-                x1, y1, x2, y2 = box.xyxy[0].int().tolist()
-                confidence = box.conf[0].item()
+# Function to detect objects and return the processed frame
+def detect_objects(frame):
+    results = model(frame, stream=True)
+    for r in results:
+        boxes = r.boxes
+        for box in boxes:
+            x1, y1, x2, y2 = box.xyxy[0]
+            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+            confidence = box.conf[0].item()
+            if confidence >= CONFIDENCE_THRESHOLD:
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 255), 3)
                 cls = int(box.cls[0].item())
+                org = [x1, y1]
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontScale = 1
+                color = (255, 0, 0)
+                thickness = 2
+                cv2.putText(frame, f"{classNames[cls]} {confidence:.2f}", org, font, fontScale, color, thickness)
+    return frame
 
-                # Draw bounding box
-                draw.rectangle([x1, y1, x2, y2], outline="magenta", width=2)
-                label = f"{classNames[cls]} {confidence:.2f}"
-                draw.text((x1, y1), label, fill="magenta")
+# Capture video from webcam
+cap = cv2.VideoCapture(0)
 
-        # Convert the image back to a numpy array
-        return np.array(img)
+# Streamlit container for the video feed
+stframe = st.empty()
 
-webrtc_streamer(key="object-detection", video_transformer_factory=VideoTransformer)
+# Run the video stream
+while True:
+    success, frame = cap.read()
+    if not success:
+        st.error("Failed to capture image from webcam.")
+        break
+
+    # Detect objects in the frame
+    frame = detect_objects(frame)
+
+    # Convert frame to RGB
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
+    # Display the frame
+    stframe.image(frame_rgb, channels='RGB', use_column_width=True)
+
+    # Break loop on stop button click
+    if st.button('Stop'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
